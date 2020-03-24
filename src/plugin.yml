@@ -1,0 +1,13 @@
+name: IleDesTraitres
+author: Taku
+description: pour l'instant aucune
+version: 0.6.8
+main: taku.idt.main.IdtMain
+commands:
+  launch:
+    description: Lance le jeu Ile des Traitres
+    permission: IleDesTraitres.launch
+  chat:
+    description: Permet de parler entre traitres
+  pause:
+  resume:
