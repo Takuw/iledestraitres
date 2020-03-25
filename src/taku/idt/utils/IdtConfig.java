@@ -1,10 +1,8 @@
 package taku.idt.utils;
 
-import com.sun.xml.internal.ws.policy.privateutil.PolicyUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
-import taku.idt.main.IdtMain;
 
 import java.io.File;
 import java.io.IOException;

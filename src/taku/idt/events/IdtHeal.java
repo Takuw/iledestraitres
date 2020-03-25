@@ -7,6 +7,7 @@ import org.bukkit.event.entity.EntityRegainHealthEvent;
 
 public class IdtHeal implements Listener {
 
+    // Desactive la regen
     @EventHandler
     public void onHeal(EntityRegainHealthEvent e) {
         if(e.getEntity() instanceof Player) {

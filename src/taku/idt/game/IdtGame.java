@@ -12,6 +12,7 @@ import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.scoreboard.*;
 import taku.idt.main.IdtMain;
+import taku.idt.utils.IdtConfig;
 
 
 import java.util.ArrayList;
@@ -23,8 +24,7 @@ public class IdtGame {
 
     static int jour=1;
 
-    // Start du jeu
-
+    // Fonction pour démarrer le jeu
     public static void start() {
         IdtState.setState(IdtState.GAME);
         IdtMain.getInstance().isSuperAlive = false;
@@ -33,39 +33,38 @@ public class IdtGame {
         game();
     }
 
+    // Fonction du jeu
     private static void game() {
 
+        // Log d'infos vers la console
         ConsoleCommandSender log = Bukkit.getServer().getConsoleSender();
 
-        // Creation scoreboard
-
+        // Scoreboard pour la vie et les jours
         ScoreboardManager manager = Bukkit.getScoreboardManager();
         Scoreboard scb = manager.getNewScoreboard();
         Objective obj = scb.registerNewObjective("obj", "", "Ile des traitres");
         obj.setDisplaySlot(DisplaySlot.SIDEBAR);
         Score score = obj.getScore(ChatColor.GREEN + "Jour:");
         score.setScore(jour);
+        Objective o = scb.registerNewObjective("health", "health", ChatColor.RED + "❤");
+        o.setDisplaySlot(DisplaySlot.BELOW_NAME);
 
-        // Mode Survie
-
+        // Mode survie pour tous le monde
         for(UUID uuid : IdtMain.getInstance().playerInGame) {
             Bukkit.getPlayer(uuid).setGameMode(GameMode.SURVIVAL);
             Bukkit.getPlayer(uuid).getInventory().clear();
             Bukkit.getPlayer(uuid).setScoreboard(scb);
         }
 
-        // World Border
-
+        // Bordure
         WorldBorder wb = Bukkit.getWorld("world").getWorldBorder();
         wb.setCenter(0, 0);
         wb.setSize(400);
 
-        // ITEMS COFFRES
-
+        // Liste d'items bonus
         ArrayList<ItemStack> items = new ArrayList<>();
 
-        // Triangulateur
-
+        // Bonus item perso 1
         ItemStack triangle = new ItemStack(Material.NETHER_STAR, 1);
         ItemMeta triangleMeta = triangle.getItemMeta();
         triangleMeta.setDisplayName("Triangulateur");
@@ -74,8 +73,7 @@ public class IdtGame {
         triangle.setItemMeta(triangleMeta);
         items.add(triangle);
 
-        // Oeil
-
+        // Bonus item perso 2
         ItemStack oeil = new ItemStack(Material.END_CRYSTAL, 1);
         ItemMeta oeilMeta = oeil.getItemMeta();
         oeilMeta.setDisplayName("Oeil de l'end");
@@ -86,34 +84,71 @@ public class IdtGame {
         items.add(oeil);
 
         // Autres items
-
         ItemStack diamonds = new ItemStack(Material.DIAMOND, 5);
         items.add(diamonds);
         ItemStack golden = new ItemStack(Material.GOLDEN_APPLE);
         items.add(golden);
         Random ran = new Random();
 
-        // Coffre Random
+        // Coffres aléatoires activé ?
+        if(IdtConfig.getConfig().getBoolean("coffres.available")) {
 
-        for(int i=0; i<4; i++) {
+            int realChest = IdtConfig.getConfig().getInt("coffres.real-chest");
+            int fakeChest = IdtConfig.getConfig().getInt("coffres.trapped-chest");
+            int itemsNumbers = items.size();
 
-            int x = ran.nextInt(150) * (ran.nextBoolean() ? -1 : 1);
-            int z = ran.nextInt(150) * (ran.nextBoolean() ? -1 : 1);
-            double y = Bukkit.getWorld("world").getHighestBlockYAt(x, z);
+            // Vrais coffres
+            for(int i=0; i<realChest; i++) {
 
-            Location spawnChest = new Location(Bukkit.getWorld("world"), x, y, z);
-            spawnChest.getBlock().setType(Material.CHEST);
-            if(spawnChest.getBlock().getState() instanceof Chest) {
-                Chest chest = (Chest) spawnChest.getBlock().getState();
-                Inventory invent = chest.getInventory();
-                int a = ran.nextInt(3);
-                invent.addItem(items.get(a));
-                log.sendMessage(x + " " + y +" " + z);
+                // Génération des coordonnées
+                int x = ran.nextInt(150) * (ran.nextBoolean() ? -1 : 1);
+                int z = ran.nextInt(150) * (ran.nextBoolean() ? -1 : 1);
+                double y = Bukkit.getWorld("world").getHighestBlockYAt(x, z);
+
+                // On pose le coffre
+                Location spawnChest = new Location(Bukkit.getWorld("world"), x, y, z);
+                spawnChest.getBlock().setType(Material.CHEST);
+
+                // On remplis le coffre
+                if(spawnChest.getBlock().getState() instanceof Chest) {
+
+                    Chest chest = (Chest) spawnChest.getBlock().getState();
+                    Inventory invent = chest.getInventory();
+
+                    int a = ran.nextInt(itemsNumbers);
+                    invent.addItem(items.get(a));
+
+                    // On rend les objets customs seulement dispo une fois
+                    if(items.get(a) == oeil) items.remove(a);
+                    if(items.get(a) == triangle) items.remove(a);
+                    if(items.get(a) == oeil || items.get(a) == triangle) itemsNumbers--;
+
+                    // Envoie des coordonnées à la cmd
+                    log.sendMessage("[IDT] Coffre: " + x + " " + y +" " + z);
+                }
+            }
+
+            // Coffres piégés
+            for(int i=0; i<fakeChest; i++) {
+
+                // Génération des coordonnées
+                int x = ran.nextInt(150) * (ran.nextBoolean() ? -1 : 1);
+                int z = ran.nextInt(150) * (ran.nextBoolean() ? -1 : 1);
+                double y = Bukkit.getWorld("world").getHighestBlockYAt(x, z);
+
+                // Génération des coffres aléatoires
+                Location spawnChest = new Location(Bukkit.getWorld("world"), x, y, z);
+                Location piege = new Location(Bukkit.getWorld("world"), x , y-1, z);
+                spawnChest.getBlock().setType(Material.TRAPPED_CHEST);
+                piege.getBlock().setType(Material.TNT);
+
+                // Enoive des coordonnées à la cmd
+                log.sendMessage("[IDT] Coffre piege: " + x + " " + y +" " + z);
             }
         }
 
-        // TP 0 0 + Heal + Bouffe
 
+        // Conditions initiales: TP en 0.0, régén de la vie et bonus speed
         for(UUID uuid : IdtMain.getInstance().playerInGame) {
             double y = Bukkit.getWorld("world").getHighestBlockYAt(0, 0) + 4;
             Location center = new Location(Bukkit.getWorld("world"), 0, y, 0);
@@ -123,13 +158,15 @@ public class IdtGame {
             Bukkit.getPlayer(uuid).setFoodLevel(20);
         }
 
-        // Selection des 3 traitres
-
+        // Choix de x traitres (Dépend du fichier config)
         BukkitTask task = Bukkit.getScheduler().runTaskLater(IdtMain.getInstance(), new Runnable(){
+
+            // On récupère le nombre dans le fichier de config
+            int NbrTraitres = IdtConfig.getConfig().getInt("traitres");
 
             @Override
             public void run() {
-                for(int i=0; i<2; i++) {
+                for(int i=0; i<NbrTraitres; i++) {
                     int index = ran.nextInt(IdtMain.getInstance().playerInGame.size());
                     UUID uuid = IdtMain.getInstance().playerInGame.get(index);
 
@@ -155,10 +192,10 @@ public class IdtGame {
 
                 for(UUID uuid : IdtMain.getInstance().playerTraitre) {
                     Bukkit.getPlayer(uuid).sendMessage(
-                            ChatColor.RED + "[IDT]" + ChatColor.GREEN + "Vos alliés sont : " + ChatColor.AQUA + str + ChatColor.GREEN + " !"
+                            ChatColor.RED + "[IDT]" + ChatColor.GREEN + " Vos alliés sont : " + ChatColor.AQUA + str + ChatColor.GREEN + " !"
                     );
                     Bukkit.getPlayer(uuid).sendMessage(
-                            ChatColor.RED + "[IDT]" + ChatColor.GREEN + "Utilisez " + ChatColor.AQUA + "/chat" + ChatColor.GREEN +
+                            ChatColor.RED + "[IDT]" + ChatColor.GREEN + " Utilisez " + ChatColor.AQUA + "/chat" + ChatColor.GREEN +
                                     " pour communiquer avec vos alliés !"
                             );
                 }
@@ -170,8 +207,7 @@ public class IdtGame {
 
         },1200);
 
-        // Selection du super traitre
-
+        // Choix du super traitre
         BukkitTask finalTask = Bukkit.getScheduler().runTaskLater(IdtMain.getInstance(), new Runnable(){
 
             @Override
@@ -195,7 +231,6 @@ public class IdtGame {
         }, 2400);
 
         // Système de jour
-
         int jourTask = Bukkit.getScheduler().scheduleSyncRepeatingTask(IdtMain.getInstance(), new Runnable() {
 
             @Override
@@ -211,8 +246,5 @@ public class IdtGame {
             }
 
         }, 24000, 24000);
-
-
-
     }
 }

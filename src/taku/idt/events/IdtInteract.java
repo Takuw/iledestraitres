@@ -24,8 +24,7 @@ public class IdtInteract implements Listener {
             Player target = (Player) e.getRightClicked();
             ItemStack item = p.getInventory().getItemInMainHand();
 
-            // Troisieme oeil meta
-
+            // Dit si le joueur est un traitre ou non
             if(item.getType().equals(Material.NETHER_STAR)) {
                 e.setCancelled(true);
                 p.getInventory().remove(item);
