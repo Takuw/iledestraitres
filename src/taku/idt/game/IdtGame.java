@@ -158,87 +158,80 @@ public class IdtGame {
             Bukkit.getPlayer(uuid).setFoodLevel(20);
         }
 
-        // Choix de x traitres (Dépend du fichier config)
-        BukkitTask task = Bukkit.getScheduler().runTaskLater(IdtMain.getInstance(), new Runnable(){
+        // On set le jour
+        Bukkit.getServer().getWorld("world").setTime(10000);
 
-            // On récupère le nombre dans le fichier de config
-            int NbrTraitres = IdtConfig.getConfig().getInt("traitres");
-
-            @Override
-            public void run() {
-                for(int i=0; i<NbrTraitres; i++) {
-                    int index = ran.nextInt(IdtMain.getInstance().playerInGame.size());
-                    UUID uuid = IdtMain.getInstance().playerInGame.get(index);
-
-                    while(IdtMain.getInstance().playerTraitre.contains(uuid)) {
-                        index = ran.nextInt(IdtMain.getInstance().playerInGame.size());
-                        uuid = IdtMain.getInstance().playerInGame.get(index);
-                    }
-
-                    IdtMain.getInstance().playerTraitre.add(uuid);
-                    IdtMain.getInstance().playerInGame.remove(uuid);
-                    Player p = Bukkit.getPlayer(uuid);
-                    p.sendTitle(ChatColor.RED + "Vous êtes un traitre !", ChatColor.GREEN + "Tuez les innocents !", 20, 140, 20);
-                    p.sendMessage(ChatColor.RED + "Vous êtes un traitre !" + ChatColor.GREEN + "Tuez les innocents !");
-                }
-
-                StringBuilder str = new StringBuilder();
-                for(UUID uuid : IdtMain.getInstance().playerTraitre) {
-                    str.append(Bukkit.getPlayer(uuid).getName());
-                    str.append(", ");
-                }
-
-                str.setLength(str.length() - 2);
-
-                for(UUID uuid : IdtMain.getInstance().playerTraitre) {
-                    Bukkit.getPlayer(uuid).sendMessage(
-                            ChatColor.RED + "[IDT]" + ChatColor.GREEN + " Vos alliés sont : " + ChatColor.AQUA + str + ChatColor.GREEN + " !"
-                    );
-                    Bukkit.getPlayer(uuid).sendMessage(
-                            ChatColor.RED + "[IDT]" + ChatColor.GREEN + " Utilisez " + ChatColor.AQUA + "/chat" + ChatColor.GREEN +
-                                    " pour communiquer avec vos alliés !"
-                            );
-                }
-
-                log.sendMessage(str.toString());
-                Bukkit.getServer().broadcastMessage(ChatColor.RED + "[IDT]" + ChatColor.GREEN + " Les traitres ont été choisi !");
-                IdtState.setState(IdtState.GAMETRAITRE);
-            }
-
-        },1200);
-
-        // Choix du super traitre
-        BukkitTask finalTask = Bukkit.getScheduler().runTaskLater(IdtMain.getInstance(), new Runnable(){
-
-            @Override
-            public void run() {
-                int index = ran.nextInt(IdtMain.getInstance().playerTraitre.size());
-                UUID uuid = IdtMain.getInstance().playerTraitre.get(index);
-                IdtMain.getInstance().isSuperAlive = true;
-                IdtMain.getInstance().supertraitre = uuid;
-
-                IdtState.setState(IdtState.GAMESUPER);
-                Player p = Bukkit.getPlayer(uuid);
-                p.sendTitle(ChatColor.RED + "Vous êtes le super traitre !", ChatColor.GREEN + " Tuez les innocents !", 20, 140, 20);
-                p.sendMessage(ChatColor.RED + "Vous êtes le super traitre !" + ChatColor.GREEN + " Tuez les innocents !");
-                log.sendMessage(p.getDisplayName());
-
-                for(UUID uuids : IdtMain.getInstance().playerTraitre) {
-                    Bukkit.getPlayer(uuids).sendMessage(ChatColor.RED + "[IDT]" + ChatColor.GREEN + " Le super traitre a été choisi !");
-                }
-            }
-
-        }, 2400);
-
-        // Système de jour
+        // Système de jour et choix des traitres/super traitres
         int jourTask = Bukkit.getScheduler().scheduleSyncRepeatingTask(IdtMain.getInstance(), new Runnable() {
 
+            int NbrTraitres = IdtConfig.getConfig().getInt("traitres.nombre");
+
             @Override
             public void run() {
+                // Jour scoreboard
                 jour++;
                 score.setScore(jour);
                 for(Player pls : Bukkit.getOnlinePlayers()) {
                     pls.setScoreboard(scb);
+                }
+
+                // Selection Traitre
+                if(IdtConfig.getConfig().getInt("traitres.jourTraitres") == jour) {
+                    for(int i=0; i<NbrTraitres; i++) {
+                        int index = ran.nextInt(IdtMain.getInstance().playerInGame.size());
+                        UUID uuid = IdtMain.getInstance().playerInGame.get(index);
+
+                        while(IdtMain.getInstance().playerTraitre.contains(uuid)) {
+                            index = ran.nextInt(IdtMain.getInstance().playerInGame.size());
+                            uuid = IdtMain.getInstance().playerInGame.get(index);
+                        }
+
+                        IdtMain.getInstance().playerTraitre.add(uuid);
+                        IdtMain.getInstance().playerInGame.remove(uuid);
+                        Player p = Bukkit.getPlayer(uuid);
+                        p.sendTitle(ChatColor.RED + "Vous êtes un traitre !", ChatColor.GREEN + "Tuez les innocents !", 20, 140, 20);
+                        p.sendMessage(ChatColor.RED + "Vous êtes un traitre !" + ChatColor.GREEN + "Tuez les innocents !");
+                    }
+
+                    StringBuilder str = new StringBuilder();
+                    for(UUID uuid : IdtMain.getInstance().playerTraitre) {
+                        str.append(Bukkit.getPlayer(uuid).getName());
+                        str.append(", ");
+                    }
+
+                    str.setLength(str.length() - 2);
+
+                    for(UUID uuid : IdtMain.getInstance().playerTraitre) {
+                        Bukkit.getPlayer(uuid).sendMessage(
+                                ChatColor.RED + "[IDT]" + ChatColor.GREEN + " Vos alliés sont : " + ChatColor.AQUA + str + ChatColor.GREEN + " !"
+                        );
+                        Bukkit.getPlayer(uuid).sendMessage(
+                                ChatColor.RED + "[IDT]" + ChatColor.GREEN + " Utilisez " + ChatColor.AQUA + "/chat" + ChatColor.GREEN +
+                                        " pour communiquer avec vos alliés !"
+                        );
+                    }
+
+                    log.sendMessage("[IDT] Les traitres sont: " + str.toString());
+                    Bukkit.getServer().broadcastMessage(ChatColor.RED + "[IDT]" + ChatColor.GREEN + " Les traitres ont été choisi !");
+                    IdtState.setState(IdtState.GAMETRAITRE);
+                }
+
+                // Selection supertraitre
+                if(IdtConfig.getConfig().getInt("traitres.jourSuper") == jour) {
+                    int index = ran.nextInt(IdtMain.getInstance().playerTraitre.size());
+                    UUID uuid = IdtMain.getInstance().playerTraitre.get(index);
+                    IdtMain.getInstance().isSuperAlive = true;
+                    IdtMain.getInstance().supertraitre = uuid;
+
+                    IdtState.setState(IdtState.GAMESUPER);
+                    Player p = Bukkit.getPlayer(uuid);
+                    p.sendTitle(ChatColor.RED + "Vous êtes le super traitre !", ChatColor.GREEN + " Tuez les innocents !", 20, 140, 20);
+                    p.sendMessage(ChatColor.RED + "Vous êtes le super traitre !" + ChatColor.GREEN + " Tuez les innocents !");
+                    log.sendMessage("[IDT] Le super traitre est: " + p.getDisplayName());
+
+                    for(UUID uuids : IdtMain.getInstance().playerTraitre) {
+                        Bukkit.getPlayer(uuids).sendMessage(ChatColor.RED + "[IDT]" + ChatColor.GREEN + " Le super traitre a été choisi !");
+                    }
                 }
 
                 Bukkit.broadcastMessage(ChatColor.RED + "[IDT]" + ChatColor.GREEN + " Nous sommes au jour " + jour + " !");

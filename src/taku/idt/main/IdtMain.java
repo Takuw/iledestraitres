@@ -43,7 +43,9 @@ public class IdtMain extends JavaPlugin {
         IdtConfig.setup();
         IdtConfig.getConfig().addDefault("auto-start.available", false);
         IdtConfig.getConfig().addDefault("auto-start.joueurs", 12);
-        IdtConfig.getConfig().addDefault("traitres", 4);
+        IdtConfig.getConfig().addDefault("traitres.nombre", 4);
+        IdtConfig.getConfig().addDefault("traitres.jourTraitres", 2);
+        IdtConfig.getConfig().addDefault("traitres.jourSuper", 4);
         IdtConfig.getConfig().addDefault("coffres.available", true);
         IdtConfig.getConfig().addDefault("coffres.real-chest", 5);
         IdtConfig.getConfig().addDefault("coffres.trapped-chest", 3);
